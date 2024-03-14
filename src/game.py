@@ -28,7 +28,6 @@ class Card:
 
 
 class DeckStatus(Enum):
-    NOT_STARTED = 0
     BLACKJACK = 1
     BURST = 2
     PLAYING = 3
@@ -94,7 +93,8 @@ class Deck:
         self.bet *= 2
         self.cards.append(card)
         self._recompute_status_after_append()
-        self.status = DeckStatus.DETERMINED
+        if self.status == DeckStatus.PLAYING:
+            self.stand()
         return self
 
     def split(self) -> tuple["Deck", "Deck"]:
