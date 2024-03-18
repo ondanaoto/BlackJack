@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
@@ -135,6 +135,12 @@ class PlayerAction(Enum):
     SPLIT = 4
 
 
+class HandKind(Enum):
+    HARD = 1
+    SOFT = 2
+    PAIR = 3
+
+
 class PlayerBoard:
     def __init__(self, fst: Card, snd: Card, bet: int):
         self.bet = bet
@@ -184,6 +190,16 @@ class PlayerBoard:
         return actions
 
     @property
+    def hand_kind(self) -> HandKind:
+        if self._splittable():
+            return HandKind.PAIR
+        if len(self.deck.total) == 1:
+            return HandKind.HARD
+        if len(self.deck.total) == 2:
+            return HandKind.SOFT
+        raise RuntimeError("Unknown hand kind")
+
+    @property
     def done(self) -> bool:
         return self.action_range == []
 
@@ -205,6 +221,12 @@ class DealerBoard:
             self.deck.hit(yama.pop())
         return self.deck
 
+@dataclass(frozen=True)
+class State:
+    dealer_number: int
+    hand_kind: HandKind
+    player_total: list[int]
+
 
 class BlackJackEnv:
     def reset(self, bet: int = 1) -> "BlackJackEnv":
@@ -220,9 +242,18 @@ class BlackJackEnv:
     def __init__(self):
         self.reset()
 
-    def step(
-        self, action: PlayerAction
-    ) -> tuple["BlackJackEnv", int, bool, dict]:
+    @property
+    def state(self) -> Optional[State]:
+        action_target = self.player_board.action_target
+        if action_target is None:
+            return None
+        return State(
+            dealer_number=self.dealer_board.deck.cards[0].value,
+            hand_kind=self.player_board.hand_kind,
+            player_total=action_target.total,
+        )
+
+    def step(self, action: PlayerAction) -> tuple[State, int, bool, dict]:
         if not self.action_range:
             raise RuntimeError("cannot step")
         if not (action in self.action_range):
@@ -239,8 +270,8 @@ class BlackJackEnv:
 
         if self.player_board.done:
             result = self._compare_result()
-            return self, result, True, {}
-        return self, 0, False, {}
+            return self.state, result, True, {}
+        return self.state, 0, False, {}
 
     def render(self) -> None:
         print(f"Dealer: {self.dealer_board.deck.cards[0].value}")
@@ -302,7 +333,7 @@ if __name__ == "__main__":
     while True:
         action = int(input())
         print(PlayerAction(action))
-        env, reward, done, _ = env.step(PlayerAction(action))
+        state, reward, done, _ = env.step(PlayerAction(action))
         env.render()
         if done:
             print("done")
