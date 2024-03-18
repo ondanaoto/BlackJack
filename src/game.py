@@ -193,9 +193,11 @@ class PlayerBoard:
     def hand_kind(self) -> HandKind:
         if self._splittable():
             return HandKind.PAIR
-        if len(self.deck.total) == 1:
+        if self.action_target is None:
+            raise RuntimeError("Try to get hand kind while there are no action target.")
+        if len(self.action_target.total) == 1:
             return HandKind.HARD
-        if len(self.deck.total) == 2:
+        if len(self.action_target.total) == 2:
             return HandKind.SOFT
         raise RuntimeError("Unknown hand kind")
 
@@ -226,6 +228,7 @@ class State:
     dealer_number: int
     hand_kind: HandKind
     player_total: list[int]
+    action_range: list[PlayerAction]
 
 
 class BlackJackEnv:
@@ -251,6 +254,7 @@ class BlackJackEnv:
             dealer_number=self.dealer_board.deck.cards[0].value,
             hand_kind=self.player_board.hand_kind,
             player_total=action_target.total,
+            action_range=self.action_range,
         )
 
     def step(self, action: PlayerAction) -> tuple[State, int, bool, dict]:
