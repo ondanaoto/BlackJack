@@ -35,10 +35,10 @@ class DeckStatus(Enum):
 
 
 class Deck:
-    def __init__(self, cards: list[Card], bet: int):
+    def __init__(self, cards: list[Card]):
         self.cards: list[Card] = cards
-        self.bet: int = bet
         self.status = DeckStatus.PLAYING
+        self.doubled = False
 
     def __len__(self):
         return len(self.cards)
@@ -63,7 +63,7 @@ class Deck:
             return [total + ace_count]
         return []
 
-    def _recompute_status_after_append(self) -> None:
+    def _recompute_status(self) -> None:
         if self.total == []:
             self.status = DeckStatus.BURST
             return
@@ -78,21 +78,23 @@ class Deck:
         if self.status != DeckStatus.PLAYING:
             raise RuntimeError("this deck can not play.")
         self.cards.append(card)
-        self._recompute_status_after_append()
+        self._recompute_status()
         return self
 
     def stand(self) -> "Deck":
         if self.status != DeckStatus.PLAYING:
             raise RuntimeError("this deck can not play.")
-        self.status = DeckStatus.DETERMINED
+        self._recompute_status()
+        if self.status != DeckStatus.BLACKJACK:
+            self.status = DeckStatus.DETERMINED
         return self
 
     def double(self, card: Card) -> "Deck":
         if self.status != DeckStatus.PLAYING:
             raise RuntimeError("this deck can not play.")
-        self.bet *= 2
+        self.doubled = True
         self.cards.append(card)
-        self._recompute_status_after_append()
+        self._recompute_status()
         if self.status == DeckStatus.PLAYING:
             self.stand()
         return self
@@ -100,7 +102,7 @@ class Deck:
     def split(self) -> tuple["Deck", "Deck"]:
         if not self.can_split():
             raise RuntimeError("cannot split")
-        return Deck([self.cards[0]], self.bet), Deck([self.cards[1]], self.bet)
+        return Deck([self.cards[0]]), Deck([self.cards[1]])
 
     def can_split(self) -> bool:
         if len(self) != 2:
@@ -142,10 +144,9 @@ class HandKind(Enum):
 
 
 class PlayerBoard:
-    def __init__(self, fst: Card, snd: Card, bet: int):
-        self.bet = bet
-        self.deck: Deck = Deck([fst, snd], bet)
-        self.split_deck: Deck = Deck([], 0)
+    def __init__(self, fst: Card, snd: Card):
+        self.deck: Deck = Deck([fst, snd])
+        self.split_deck: Deck = Deck([])
 
     def split(self) -> None:
         if not self.deck.can_split():
@@ -214,7 +215,7 @@ class PlayerBoard:
 
 class DealerBoard:
     def __init__(self, fst: Card, snd: Card):
-        self.deck: Deck = Deck([fst, snd], 0)
+        self.deck: Deck = Deck([fst, snd])
 
     def play(self, yama: Yama) -> Deck:
         while (
@@ -232,10 +233,10 @@ class State:
 
 
 class BlackJackEnv:
-    def reset(self, bet: int = 1) -> "BlackJackEnv":
+    def reset(self) -> "BlackJackEnv":
         self.yama: Yama = Yama()
         self.player_board: PlayerBoard = PlayerBoard(
-            self.yama.pop(), self.yama.pop(), bet
+            self.yama.pop(), self.yama.pop()
         )
         self.dealer_board: DealerBoard = DealerBoard(
             self.yama.pop(), self.yama.pop()
@@ -290,7 +291,7 @@ class BlackJackEnv:
         for i, action in enumerate(self.action_range):
             print(f"{i+1}: {action}")
 
-    def _compare_result(self) -> int:
+    def _compare_result(self) -> float:
         dealer_deck = self.dealer_board.play(self.yama)
         reward = self._compare_deck(self.player_board.deck, dealer_deck)
         if self.player_board.already_split():
@@ -300,18 +301,18 @@ class BlackJackEnv:
         return reward
 
     @staticmethod
-    def _compare_deck(player_deck: Deck, dealer_deck: Deck) -> int:
-        bet = player_deck.bet
+    def _compare_deck(player_deck: Deck, dealer_deck: Deck) -> float:
+        bet = 2.0 if player_deck.doubled else 1.0
         if player_deck.status == DeckStatus.BURST:
             return -bet
         if player_deck.status == DeckStatus.BLACKJACK:
             if dealer_deck.status == DeckStatus.BLACKJACK:
                 return 0
-            return int(bet * 1.5)
+            return bet * 1.5
         if dealer_deck.status == DeckStatus.BURST:
             return bet
         if dealer_deck.status == DeckStatus.BLACKJACK:
-            return -bet
+            return -1.0
         player_total = player_deck.total[-1]
         dealer_total = dealer_deck.total[-1]
         if player_total > dealer_total:
