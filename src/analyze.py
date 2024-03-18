@@ -1,36 +1,40 @@
 import matplotlib.pyplot as plt
-import simulation
-import agents
 
-def show_distribution(iter = 1000, sample = 1000):
+import agents
+import simulation
+
+
+def show_distribution(iter=1000, sample=1000):
     data = []
     for _ in range(sample):
         data.append(play(iter))
     plt.figure(figsize=(10, 6))
-    plt.hist(data, bins=30, alpha=0.7, color='blue')
-    plt.title('Histogram of Basic Strategy Agent')
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
+    plt.hist(data, bins=30, alpha=0.7, color="blue")
+    plt.title("Histogram of Basic Strategy Agent")
+    plt.xlabel("mean reward")
+    plt.ylabel("Frequency")
 
     # ヒストグラムの表示
     plt.grid(True)
     plt.show()
 
-def play(iter = 1000) -> float:
+
+def play(iter=1000) -> float:
     total_reward = 0
     agent = agents.BasicStrategyAgent()
     for _ in range(iter):
         total_reward += simulation.simulate(agent)
     return total_reward / iter
 
-def show_playing(iterate_num = 1000):
+
+def show_playing(iterate_num=1000):
     total_reward = 0
     total_reward_history = []
     agent = agents.BasicStrategyAgent()
 
     plt.ion()  # インタラクティブモードをオンにする
     _, ax = plt.subplots()
-    line, = ax.plot(total_reward_history)
+    (line,) = ax.plot(total_reward_history)
 
     for _ in range(iterate_num):
         total_reward += simulation.simulate(agent)
@@ -46,6 +50,7 @@ def show_playing(iterate_num = 1000):
 
     plt.ioff()  # インタラクティブモードをオフにする
     plt.show()  # 最終的なプロットを表示
+
 
 if __name__ == "__main__":
     show_distribution()

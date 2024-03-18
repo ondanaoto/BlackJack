@@ -1,5 +1,6 @@
+from agents import Agent, BasicStrategyAgent
 from game import BlackJackEnv
-from agents import BasicStrategyAgent, Agent
+
 
 def simulate(agent: Agent):
     env = BlackJackEnv()
@@ -22,7 +23,7 @@ if __name__ == "__main__":
         env.render()
         if done:
             print("done")
-            print(f"dealer_deck:")
+            print("dealer_deck:")
             for card in env.dealer_board.deck.cards:
                 print(card.value)
             print(f"dealer_total: {env.dealer_board.deck.total}")

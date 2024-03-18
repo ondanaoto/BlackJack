@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 import game
 
@@ -6,6 +6,7 @@ import game
 class Agent(ABC):
     def get_action(self, state: game.State) -> game.PlayerAction:
         raise NotImplementedError
+
 
 hard_table = {
     2: {
@@ -247,7 +248,7 @@ hard_table = {
         8: game.PlayerAction.STAND,
         9: game.PlayerAction.STAND,
         10: game.PlayerAction.STAND,
-    }
+    },
 }
 soft_table = {
     11: {
@@ -503,25 +504,31 @@ split_table = {
         8: game.PlayerAction.STAND,
         9: game.PlayerAction.STAND,
         10: game.PlayerAction.STAND,
-    }
+    },
 }
 
 basic_strategy = {
     game.HandKind.HARD: hard_table,
     game.HandKind.SOFT: soft_table,
-    game.HandKind.PAIR: split_table
+    game.HandKind.PAIR: split_table,
 }
+
 
 class BasicStrategyAgent(Agent):
     def get_action(self, state: game.State) -> game.PlayerAction:
         try:
-            action = basic_strategy[state.hand_kind][state.player_total[-1]][state.dealer_number]
+            action = basic_strategy[state.hand_kind][state.player_total[-1]][
+                state.dealer_number
+            ]
         except KeyError:
             print(f"state: {state}")
             print(f"state.hand_kind: {state.hand_kind}")
             print(f"state.player_total[-1]: {state.player_total[-1]}")
             raise KeyError
-        if action == game.PlayerAction.DOUBLE and action not in state.action_range:
+        if (
+            action == game.PlayerAction.DOUBLE
+            and action not in state.action_range
+        ):
             action = game.PlayerAction.HIT
 
         return action

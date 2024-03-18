@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
@@ -195,7 +195,9 @@ class PlayerBoard:
         if self._splittable():
             return HandKind.PAIR
         if self.action_target is None:
-            raise RuntimeError("Try to get hand kind while there are no action target.")
+            raise RuntimeError(
+                "Try to get hand kind while there are no action target."
+            )
         if len(self.action_target.total) == 1:
             return HandKind.HARD
         if len(self.action_target.total) == 2:
@@ -223,6 +225,7 @@ class DealerBoard:
         ):
             self.deck.hit(yama.pop())
         return self.deck
+
 
 @dataclass(frozen=True)
 class State:
@@ -280,11 +283,11 @@ class BlackJackEnv:
 
     def render(self) -> None:
         print(f"Dealer: {self.dealer_board.deck.cards[0].value}")
-        print(f"Player:")
+        print("Player:")
         for card in self.player_board.deck.cards:
             print(card.value)
         if self.player_board.already_split():
-            print(f"Player(split):")
+            print("Player(split):")
             for card in self.player_board.split_deck.cards:
                 print(card.value)
         print("Action range:")
@@ -342,7 +345,7 @@ if __name__ == "__main__":
         env.render()
         if done:
             print("done")
-            print(f"dealer_deck:")
+            print("dealer_deck:")
             for card in env.dealer_board.deck.cards:
                 print(card.value)
             print(f"dealer_total: {env.dealer_board.deck.total}")
