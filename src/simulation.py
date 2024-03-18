@@ -5,7 +5,7 @@ def simulate(agent: Agent):
     env = BlackJackEnv()
     while True:
         action = agent.get_action(env.state)
-        state, reward, done, _ = env.step(action)
+        _, reward, done, _ = env.step(action)
         if done:
             return reward
 
